@@ -2,15 +2,12 @@
 from cgi import print_arguments
 import os
 import sys
-import re
-import random
 import requests
 import time
 import datetime
 import locale
 import csv
 import json
-import folium
 from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -19,7 +16,7 @@ from selenium.webdriver.firefox.options import Options
 import geopy.distance
 import smtplib, ssl
 
-def read_config():
+def config():
 	config_file = 'config.json'
 
 	global log_file, aircrafts, instagram_info, mail_info, start_days_ago, end_days_ago, gecko_driver_path, firefox_profile_path, hashtags, api_url
@@ -30,17 +27,14 @@ def read_config():
 		aircrafts = config["aircrafts"]
 		instagram_info = config["instagram"]
 		mail_info = config["mail"]
-		start_days_ago = config["start_days_ago"]
-		end_days_ago = config["end_days_ago"]
 		gecko_driver_path = config["gecko_driver_path"]
 		firefox_profile_path = config["firefox_profile_path"]
 		hashtags = config["hashtags"]
 		api_url = config["api_url"]
 
-		# for i in range(0, 35):
-		# 	data[f"{i}"] = f"tile-{i}.png"
-
-		# json.dump(data, f)
+	today = datetime.date.today()
+	start_days_ago = (today - datetime.date(today.year, today.month, 1)).days
+	end_days_ago = 0
 
 def print_warning(message):
 	print("\033[1;33m[WARNING]\033[1;37m " + message)
@@ -60,7 +54,7 @@ def check_config():
 		print_error("Incomplete info for Instagram connection.")
 		sys.exit()
 
-	if mail_info["smtp_addr"] == "" or mail["smtp_port"] == "" or mail["email"] == "" or mail["password"] == "":
+	if mail_info["smtp_addr"] == "" or mail_info["smtp_port"] == "" or mail_info["email"] == "" or mail_info["password"] == "":
 		print_error("Incomplete info for email.")
 		sys.exit()
 
@@ -81,30 +75,21 @@ def check_config():
 
 	if firefox_profile_path == "":
 		print_error("No value for 'firefox_profile_path'.")
-		sys.exit()
 	elif not os.path.isdir(firefox_profile_path):
 		print_error("Wrong path for 'firefox_profile_path'.")
 		sys.exit()
 
 
-
-#########################################################################################
-# Script params
-#script_path = '/absolute/path/to/script/' # the '/' at the end is needed
 script_path = os.path.realpath(__file__)
-ask = False # ask before running
-openskynetwork = True # check flights on openskynetwork (alternative: own json)
-instagram = False # upload to instagram
 send_email = True # send recap email
 headless_instagram = True  # hide Instagram browsing
 log_file = True # write console output to log file
 
-
 # Browser params
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
 options = Options() # first instance of browser -> Instagram
-options.add_argument("-profile")
-options.add_argument(r'/path/to/firefox/profile/.mozilla/firefox/regatzrxsd.default') # use a profile to avoid logging in to Instagram each time
+##options.add_argument("-profile")
+##options.add_argument(r'/path/to/firefox/profile/.mozilla/firefox/regatzrxsd.default') # use a profile to avoid logging in to Instagram each time
 if headless_instagram: options.add_argument("--headless")
 options2 = Options() # second instance of browser -> creates maps
 
