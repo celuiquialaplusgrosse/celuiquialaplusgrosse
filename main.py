@@ -40,7 +40,10 @@ def config():
 	end_days_ago = 0
 
 	with open("airports.csv") as f:
-		airports = csv.DictReader(f)
+		airports = list()
+		data = csv.DictReader(f)
+		for d in data:
+			airports.append(d)
 
 def print_warning(message):
 	print("\033[1;33m[WARNING]\033[1;37m " + message)
@@ -424,7 +427,7 @@ with open(log_file, "r+") as f:
 #""" + str(nb_flights_uploaded) + """/""" + str(nb_flights_new) + """ nouveaux vols
 
 message_text = """\
-""" + str(0) + """/""" + str(nb_flights_new) + """ nouveaux vols
+""" + str(0) + """/""" + str(0) + """ nouveaux vols
 
 
 Debut: """ + str(datetime.datetime.fromtimestamp(start_time).strftime("%H.%M:%S")) + """
@@ -436,7 +439,7 @@ Log:
 """ + log
 
 msg = MIMEMultipart()
-msg['Subject'] = 'Test'
+msg['Subject'] = "Récapitulatifs vols - " + str(datetime.date.today())
 msg['From'] = mail_info["email"]
 msg['To'] = mail_info["email"]
 

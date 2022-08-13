@@ -1,31 +1,21 @@
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=39ce6e&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=39ce6e&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=39CE6B&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=39CE6B&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b770d&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b770d&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b76b3&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b76b3&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b77e5&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b77e5&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b76a5&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b76a5&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b77e4&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b77e4&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b76ae&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b76ae&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=3b76a4&begin=1659311015&end=1660347815
+https://opensky-network.org/api/flights/aircraft?icao24=3b76a4&begin=1659313528&end=1660350328
 Requesting OpenSky Network API
-https://opensky-network.org/api/flights/aircraft?icao24=395580&begin=1659311015&end=1660347815
-39ce6e 0
-39CE6B 9.4
-3b770d 11.0
-3b76b3 0
-3b77e5 9.899999999999999
-3b76a5 5.0
-3b77e4 18.999999999999996
-3b76ae 0
-3b76a4 0
-395580 0
-{'39ce6e': 0, '39CE6B': 9.4, '3b770d': 11.0, '3b76b3': 0, '3b77e5': 9.899999999999999, '3b76a5': 5.0, '3b77e4': 18.999999999999996, '3b76ae': 0, '3b76a4': 0, '395580': 0}
+https://opensky-network.org/api/flights/aircraft?icao24=395580&begin=1659313528&end=1660350328
+{'39ce6e': 0, '39CE6B': 0, '3b770d': 0, '3b76b3': 0, '3b77e5': 0, '3b76a5': 0, '3b77e4': 0, '3b76ae': 0, '3b76a4': 0, '395580': 0}
