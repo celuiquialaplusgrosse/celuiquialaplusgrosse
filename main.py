@@ -1,5 +1,8 @@
 #!/usr/bin/python3
-from cgi import print_arguments
+
+import email
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import os
 import sys
 import requests
@@ -19,7 +22,7 @@ import smtplib, ssl
 def config():
 	config_file = 'config.json'
 
-	global log_file, aircrafts, instagram_info, mail_info, start_days_ago, end_days_ago, gecko_driver_path, firefox_profile_path, hashtags, api_url
+	global log_file, aircrafts, instagram_info, mail_info, start_days_ago, end_days_ago, gecko_driver_path, firefox_profile_path, hashtags, api_url, airports
 
 	with open(f'./{config_file}', 'r+') as f:
 		config = json.load(f)
@@ -35,6 +38,9 @@ def config():
 	today = datetime.date.today()
 	start_days_ago = (today - datetime.date(today.year, today.month, 1)).days
 	end_days_ago = 0
+
+	with open("airports.csv") as f:
+		airports = csv.DictReader(f)
 
 def print_warning(message):
 	print("\033[1;33m[WARNING]\033[1;37m " + message)
@@ -80,10 +86,12 @@ def check_config():
 		sys.exit()
 
 
+config()
+check_config()
+
 script_path = os.path.realpath(__file__)
 send_email = True # send recap email
 headless_instagram = True  # hide Instagram browsing
-log_file = True # write console output to log file
 
 # Browser params
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
@@ -91,10 +99,9 @@ options = Options() # first instance of browser -> Instagram
 ##options.add_argument("-profile")
 ##options.add_argument(r'/path/to/firefox/profile/.mozilla/firefox/regatzrxsd.default') # use a profile to avoid logging in to Instagram each time
 if headless_instagram: options.add_argument("--headless")
-options2 = Options() # second instance of browser -> creates maps
 
 # Instagram
-instagram_post = "{day} | {departure} -> {arrival} | {duration} | ~ {co2} t CO2\n.\n{hashtags}\n.\nLes émissions de CO2 sont des estimations.\nLa trajectoire de vol représentée est illustrative."
+#instagram_post = "{day} | {departure} -> {arrival} | {duration} | ~ {co2} t CO2\n.\n{hashtags}\n.\nLes émissions de CO2 sont des estimations.\nLa trajectoire de vol représentée est illustrative."
 
 # Others
 locale.setlocale(locale.LC_TIME,'') # For French date format
@@ -102,8 +109,6 @@ locale.setlocale(locale.LC_TIME,'') # For French date format
 # Write in log or print in console
 if log_file: 
 	sys.stdout = open(log_file, 'w')
-else: 
-	open(log_file, 'w').close()
 
 start_time = time.time()
 
@@ -111,12 +116,12 @@ start_time = time.time()
 begin = int(start_time - start_days_ago*24*60*60)
 end = int(start_time - end_days_ago*24*60*60)
 
-flights_list = {}
-nb_flights_new = 0
-
 co2_per_aircraft = {}
 
 for aircraft in aircrafts:
+	if aircraft["ton_per_km"] == "":
+		pass
+
 	requestURL = api_url + '?icao24=' + aircraft["icao24"] + '&begin=' + str(begin) + '&end=' + str(end) 
 
 	# Requesting API
@@ -140,43 +145,36 @@ for aircraft in aircrafts:
 		
 	nb_flights_found = len(flights)
 
-	flights_list[aircraft["icao24"]] = []
+	co2_per_aircraft[aircraft["icao24"]] = 0
 
 	# Getting flights
 	for flight in flights:
 		if (flight['estDepartureAirport'] is None or flight['estArrivalAirport'] is None or flight['firstSeen'] is None or flight['estDepartureAirport'] == flight['estArrivalAirport']):
 			continue
+
 		# Getting airport municipalities and day of travel
-		with open("airports.csv") as f:
-			airports = csv.DictReader(f)
-			for airport in airports:
-				if(airport['ident'] == flight['estDepartureAirport']):
-					departure = airport['municipality']
-					departure_coord = [airport['latitude_deg'],airport['longitude_deg']]
-				if(airport['ident'] == flight['estArrivalAirport']):
-					arrival = airport['municipality']
-					arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
+		for airport in airports:
+			if(airport['ident'] == flight['estDepartureAirport']):
+				departure = airport['municipality']
+				departure_coord = [airport['latitude_deg'],airport['longitude_deg']]
+			if(airport['ident'] == flight['estArrivalAirport']):
+				arrival = airport['municipality']
+				arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
+
 		departure_time = str(datetime.date.fromtimestamp(flight['firstSeen']).strftime("%d.%m.%Y"))
 		duration = flight['lastSeen'] - flight['firstSeen']
 		# Removing flights already fetched
-		with open("flights.csv", "r") as f:
-			oldFlights = csv.DictReader(f)
-			old = False
-			for oldFlight in oldFlights:
-				if (oldFlight['departure'] == departure and oldFlight['arrival'] == arrival and oldFlight['day'] == departure_time):
-					old = True
-					break
-			if not old:
-				distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
-				co2 = round(distance * aircraft["tom_per_km"], 1)
-				#flights_list[aircraft["icao24"]].insert(0, [departure, arrival, departure_time, departure_coord, arrival_coord, co2, duration])
-				co2_per_aircraft[aircraft["icao24"]] += co2
-
-	# Print flight list
-	#for (index,flight) in enumerate(flights_list[aircraft["icao24"]]): print(str(index) + " | " + flight[0] + " -> " + flight[1] + " | " + flight[2])
-
-	nb_flights_new += len(flights_list[aircraft["icao24"]])
-	nb_flights_uploaded = 0
+		# with open("flights.csv", "r") as f:
+		# 	oldFlights = csv.DictReader(f)
+		# 	old = False
+		# 	for oldFlight in oldFlights:
+		# 		if (oldFlight['departure'] == departure and oldFlight['arrival'] == arrival and oldFlight['day'] == departure_time):
+		# 			old = True
+		# 			break
+		# 	if not old:
+		# 		distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
+		# 		co2 = round(distance * float(aircraft["ton_per_km"]), 1)
+		# 		co2_per_aircraft[aircraft["icao24"]] += co2
 
 
 # if nb_flights_new != 0:
@@ -418,14 +416,15 @@ end_time = time.time()
 print(co2_per_aircraft)
 
 # stop logging and send logs via email
+# print(log_file)
 sys.stdout.close()
-with open(log_file, "r") as f:
+with open(log_file, "r+") as f:
 	log = f.read()
 
-message = """\
-Subject: Avion
+#""" + str(nb_flights_uploaded) + """/""" + str(nb_flights_new) + """ nouveaux vols
 
-""" + str(nb_flights_uploaded) + """/""" + str(nb_flights_new) + """ nouveaux vols
+message_text = """\
+""" + str(0) + """/""" + str(nb_flights_new) + """ nouveaux vols
 
 
 Debut: """ + str(datetime.datetime.fromtimestamp(start_time).strftime("%H.%M:%S")) + """
@@ -436,11 +435,18 @@ Log:
 
 """ + log
 
+msg = MIMEMultipart()
+msg['Subject'] = 'Test'
+msg['From'] = mail_info["email"]
+msg['To'] = mail_info["email"]
+
+msg.attach(MIMEText(message_text, "plain"))
+
 if send_email:
 	# Create a secure SSL context
-	context = ssl.create_default_context()
 	# Send email
-	with smtplib.SMTP_SSL(mail_info["smtp_addr"], mail_info["smtp_port"], context=context) as server:
+	with smtplib.SMTP_SSL(mail_info["smtp_addr"], mail_info["smtp_port"]) as server:
+		server.ehlo()
 		server.login(mail_info["email"], mail_info["password"])
-		server.sendmail(mail_info["email"], mail_info["email"], message)
+		server.sendmail(mail_info["email"], mail_info["email"], msg.as_string())
 
