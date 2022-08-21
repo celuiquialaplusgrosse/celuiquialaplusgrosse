@@ -18,6 +18,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 import geopy.distance
 import smtplib, ssl
+import generate_report
 
 def config():
 	config_file = 'config.json'
@@ -37,6 +38,7 @@ def config():
 
 	today = datetime.date.today()
 	start_days_ago = (today - datetime.date(today.year, today.month, 1)).days
+	#start_days_ago = 60
 	end_days_ago = 0
 
 	with open("airports.csv") as f:
@@ -88,6 +90,14 @@ def check_config():
 		print_error("Wrong path for 'firefox_profile_path'.")
 		sys.exit()
 
+def send_mail():
+	pass
+
+def get_flights_info():
+	pass
+
+def prepare_for_report():
+	pass
 
 config()
 check_config()
@@ -118,20 +128,18 @@ start_time = time.time()
 # Open Sky API request
 begin = int(start_time - start_days_ago*24*60*60)
 end = int(start_time - end_days_ago*24*60*60)
-
+nb_flights_found = 0
 co2_per_aircraft = {}
 
 for aircraft in aircrafts:
 	if aircraft["ton_per_km"] == "":
-		pass
+		continue
 
 	requestURL = api_url + '?icao24=' + aircraft["icao24"] + '&begin=' + str(begin) + '&end=' + str(end) 
-
 	# Requesting API
 	for i in range(20):
 		try:
 			print('Requesting OpenSky Network API')
-			print(requestURL)
 			r = requests.get(requestURL, headers=headers,timeout=10)
 		except:
 			print('Cannot access OpenSky Network API, sleep for 1min')
@@ -145,40 +153,50 @@ for aircraft in aircrafts:
 		flights = []
 	else:
 		flights = r.json()
-		
-	nb_flights_found = len(flights)
 
-	co2_per_aircraft[aircraft["icao24"]] = 0
+	nb_flights_found += len(flights)
+
+	if (not aircraft["owner_or_operator"] in co2_per_aircraft):
+		co2_per_aircraft[aircraft["owner_or_operator"]] = 0.0
+
 
 	# Getting flights
 	for flight in flights:
 		if (flight['estDepartureAirport'] is None or flight['estArrivalAirport'] is None or flight['firstSeen'] is None or flight['estDepartureAirport'] == flight['estArrivalAirport']):
 			continue
 
+		departure_coord = 0
+		arrival_coord = 0
+
 		# Getting airport municipalities and day of travel
-		for airport in airports:
-			if(airport['ident'] == flight['estDepartureAirport']):
-				departure = airport['municipality']
-				departure_coord = [airport['latitude_deg'],airport['longitude_deg']]
-			if(airport['ident'] == flight['estArrivalAirport']):
-				arrival = airport['municipality']
-				arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
+		with open("airports.csv") as f:
+			airports = csv.DictReader(f)
+			for airport in airports:
+				if (airport['ident'] == flight['estDepartureAirport'] or airport['gps_code'] == flight['estDepartureAirport']):
+					departure = airport['municipality']
+					departure_coord = [airport['latitude_deg'],airport['longitude_deg']]
+				if (airport['ident'] == flight['estArrivalAirport'] or airport['gps_code'] == flight['estArrivalAirport']):
+					arrival = airport['municipality']
+					arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
+
+		# print(f"Departure coord is {departure_coord}")
+		# print(f"Arrival coord is {arrival_coord}")
 
 		departure_time = str(datetime.date.fromtimestamp(flight['firstSeen']).strftime("%d.%m.%Y"))
 		duration = flight['lastSeen'] - flight['firstSeen']
-		# Removing flights already fetched
-		# with open("flights.csv", "r") as f:
-		# 	oldFlights = csv.DictReader(f)
-		# 	old = False
-		# 	for oldFlight in oldFlights:
-		# 		if (oldFlight['departure'] == departure and oldFlight['arrival'] == arrival and oldFlight['day'] == departure_time):
-		# 			old = True
-		# 			break
-		# 	if not old:
-		# 		distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
-		# 		co2 = round(distance * float(aircraft["ton_per_km"]), 1)
-		# 		co2_per_aircraft[aircraft["icao24"]] += co2
 
+		try:
+			distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
+		except ValueError:
+			print("AICRAFT IS " + aircraft["icao24"] + " - " + aircraft["owner_or_operator"])
+			print_error(f'DEPARTURE: {flight["estDepartureAirport"]} - {departure_coord}, ARRIVAL: {flight["estArrivalAirport"]} - {arrival_coord}')
+		else:
+			co2 = round(distance * float(aircraft["ton_per_km"]), 1)
+			co2_per_aircraft[aircraft["owner_or_operator"]] += co2
+
+print(co2_per_aircraft)
+co2_per_aircraft = dict(sorted(co2_per_aircraft.items(), key=lambda it: it[1], reverse=True))
+generate_report.generate(co2_per_aircraft)
 
 # if nb_flights_new != 0:
 # 	if instagram:
@@ -416,7 +434,8 @@ end_time = time.time()
 # print("New : " + str(nb_flights_new))
 # print("Uploaded : " + str(nb_flights_uploaded))
 
-print(co2_per_aircraft)
+#print(f"Found {nb_flights_found}")
+#print(co2_per_aircraft)
 
 # stop logging and send logs via email
 # print(log_file)

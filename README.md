@@ -10,3 +10,7 @@ Le code est basé sur le projet de [laviondebernard](https://github.com/lavionde
 ## Sources
 - Jetadvisors
 
+
+## Sources
+- <a href='https://www.freepik.com/vectors/3d-earth'>3d earth vector created by starline - www.freepik.com</a>
+<a href='https://fr.freepik.com/vecteurs/globe-dessin'>Globe dessin vecteur créé par rawpixel.com - fr.freepik.com</a>
