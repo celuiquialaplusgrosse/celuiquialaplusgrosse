@@ -1,0 +1,24 @@
+{
+  "log_file": "",
+  "aicrafts": {
+    "icao24": "",
+    "registry": "",
+    "ton_per_km": ""
+  },
+  "instagram": {
+    "username": "",
+    "password": ""
+  },
+  "mail": {
+    "smtp_addr": "",
+    "smtp_port": "",
+    "email": "",
+    "password": ""
+  },
+  "start_days_ago": "",
+  "end_days_ago": "",
+  "gecko_driver_path": "",
+  "firefox_profile_path": "",
+  "hashtags": [],
+  "api_url": "https://opensky-network.org/api/flights/aircraft"
+}

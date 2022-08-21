@@ -53,6 +53,9 @@ def print_warning(message):
 def print_error(message):
 	print("\033[1;31m[ERROR]\033[1;37m " + message)
 
+def post_on_instagram():
+	pass
+
 def check_config():
 	for aircraft in aircrafts:
 		if aircraft["ton_per_km"] == "":
@@ -169,7 +172,7 @@ for aircraft in aircrafts:
 		arrival_coord = 0
 
 		# Getting airport municipalities and day of travel
-		with open("airports.csv") as f:
+		with open("resources/airports.csv") as f:
 			airports = csv.DictReader(f)
 			for airport in airports:
 				if (airport['ident'] == flight['estDepartureAirport'] or airport['gps_code'] == flight['estDepartureAirport']):
