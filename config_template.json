@@ -1,10 +1,14 @@
 {
-  "log_file": "",
-  "aicrafts": {
-    "icao24": "",
-    "registry": "",
-    "ton_per_km": ""
-  },
+  "logs_directory": "",
+  "output_directory": "",
+  "aircrafts": [
+    {
+      "icao24": "",
+      "registry": "",
+      "ton_per_km": "",
+      "owner_or_operator": ""
+    }
+  ],
   "instagram": {
     "username": "",
     "password": ""
@@ -15,8 +19,6 @@
     "email": "",
     "password": ""
   },
-  "start_days_ago": "",
-  "end_days_ago": "",
   "gecko_driver_path": "",
   "firefox_profile_path": "",
   "hashtags": [],
