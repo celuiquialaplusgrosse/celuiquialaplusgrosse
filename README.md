@@ -8,7 +8,11 @@ Le code est basé sur le projet de [laviondebernard](https://github.com/lavionde
 
 
 ## Sources
-- Jetadvisors
+- [Registre des aéronefs français](https://immat.aviation-civile.gouv.fr/immat/servlet/aeronef_liste.html)
+- [Informations techniques avions](https://jetadvisors.com/)
+- [Base de données d'avions](https://opensky-network.org/aircraft-database)
+- [Illustration environnement](https://fr.freepik.com/vecteurs-libre/vecteur-doodle-environnement-concept-energie-renouvelable_17224308.htm#query=globe%20dessin&position=7&from_view=keyword)
+- [Illustration bloc-notes](https://www.vecteezy.com/vector-art/4108812-clipboard-realistic-paper-blank-tablet-office-supplies-sheet-clipboard-vector-template-clipboard-office-work-empty-pad-page-illustration)
 
 
 ## Sources
