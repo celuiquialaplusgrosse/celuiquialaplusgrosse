@@ -1,2 +1,5 @@
 config.json
 test.py
+__pycache__/
+old/
+test_sample.json

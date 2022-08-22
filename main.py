@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import email
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
@@ -11,23 +10,41 @@ import datetime
 import locale
 import csv
 import json
-from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 import geopy.distance
-import smtplib, ssl
-import generate_report
+import smtplib
+from PIL import Image, ImageDraw, ImageFont
+import datetime
+import locale
+import consts
+from logger import Logger
+import re
+
+script_path = os.getcwd()
+print(script_path)
+headless_instagram = False  # hide Instagram browsing
+test_mode = True
+
+# Browser params
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+options = Options() # first instance of browser -> Instagram
+if headless_instagram: options.add_argument("--headless")
+options.add_argument("--lang=fr-FR")
+options.set_preference('intl.accept_languages', 'fr-FR')
 
 def config():
+	locale.setlocale(locale.LC_ALL, 'fr_FR')
 	config_file = 'config.json'
 
-	global log_file, aircrafts, instagram_info, mail_info, start_days_ago, end_days_ago, gecko_driver_path, firefox_profile_path, hashtags, api_url, airports
+	global current_datetime, logs_directory, output_directory, aircrafts, instagram_info, mail_info, start_days_ago, end_days_ago, gecko_driver_path, firefox_profile_path, hashtags, api_url, airports
 
-	with open(f'./{config_file}', 'r+') as f:
+	with open(f'./{config_file}', 'r+', encoding='utf-8') as f:
 		config = json.load(f)
-		log_file = config["log_file"]
+		logs_directory = config["logs_directory"]
+		output_directory = config["output_directory"]
 		aircrafts = config["aircrafts"]
 		instagram_info = config["instagram"]
 		mail_info = config["mail"]
@@ -37,143 +54,157 @@ def config():
 		api_url = config["api_url"]
 
 	today = datetime.date.today()
+	current_datetime = datetime.datetime.now()
 	start_days_ago = (today - datetime.date(today.year, today.month, 1)).days
-	#start_days_ago = 60
 	end_days_ago = 0
+	Logger.log_file_path = logs_directory + "/" + "log_" + current_datetime.strftime("%d%m%Y_%H%M%S") + ".txt"
 
-	with open("airports.csv") as f:
+	with open("resources/airports.csv") as f:
 		airports = list()
 		data = csv.DictReader(f)
 		for d in data:
 			airports.append(d)
 
-def print_warning(message):
-	print("\033[1;33m[WARNING]\033[1;37m " + message)
+	Logger.info('Configuration loaded.')
 
-def print_error(message):
-	print("\033[1;31m[ERROR]\033[1;37m " + message)
-
-def post_on_instagram():
-	pass
 
 def check_config():
 	for aircraft in aircrafts:
 		if aircraft["ton_per_km"] == "":
-			print_warning(f"""No evaluation for aircraft {aircraft["registry"]} owned/operated by {aircraft["owner_or_operator"]}""")
+			Logger.warning(f"""No evaluation for aircraft {aircraft["registry"]} owned/operated by {aircraft["owner_or_operator"]}""")
 
 	if len(hashtags) == 0:
-		print_warning("No hashtags will be added to the Instagram post.")
+		Logger.warning("No hashtags will be added to the Instagram post.")
 
 	if instagram_info["username"] == "" or instagram_info["password"] == "":
-		print_error("Incomplete info for Instagram connection.")
+		Logger.error("Incomplete info for Instagram connection.")
 		sys.exit()
 
 	if mail_info["smtp_addr"] == "" or mail_info["smtp_port"] == "" or mail_info["email"] == "" or mail_info["password"] == "":
-		print_error("Incomplete info for email.")
+		Logger.error("Incomplete info for email.")
 		sys.exit()
 
 	if start_days_ago == "":
-		print_error("No value for 'start_days_ago'.")
+		Logger.error("No value for 'start_days_ago'.")
 		sys.exit()
 
 	if end_days_ago == "":
-		print_error("No value for 'end_days_ago'.")
+		Logger.error("No value for 'end_days_ago'.")
 		sys.exit()
 
 	if gecko_driver_path == "":
-		print_error("No value for 'gecko_driver_path'.")
+		Logger.error("No value for 'gecko_driver_path'.")
 		sys.exit()
-	elif not os.path.isdir(gecko_driver_path):
-		print_error("Wrong path for 'gecko_driver_path'.")
+	elif not os.path.isfile(gecko_driver_path):
+		Logger.error("Wrong path for 'gecko_driver_path'.")
 		sys.exit()
 
 	if firefox_profile_path == "":
-		print_error("No value for 'firefox_profile_path'.")
+		Logger.warning("No value for 'firefox_profile_path'.")
 	elif not os.path.isdir(firefox_profile_path):
-		print_error("Wrong path for 'firefox_profile_path'.")
+		Logger.warning("Wrong path for 'firefox_profile_path'.")
 		sys.exit()
 
-def send_mail():
-	pass
+
+def generate(flights: dict):
+	month_name = current_datetime.strftime("%B").capitalize()
+	year = current_datetime.year;
+	support = Image.open('./resources/support.png')
+	canva = ImageDraw.Draw(support)
+	font_path = './resources/gloria_hallelujah/gloriahallelujah.ttf'
+	subtitle_font = ImageFont.truetype(font_path, 32)
+	list_font = ImageFont.truetype(font_path, 36)
+	canva.text((453, 101), month_name + str(year), font=subtitle_font, fill=(0,0,0))
+
+	first_item_start = 237
+
+	index = 0
+	for key, value in flights.items():
+		if (value == 0.0):
+			continue
+		canva.text((155, first_item_start + (index * consts.LINE_HEIGHT)), str(index + 1) + '. ' + key + " : " + format(value, ".2f") + " tonnes", font=list_font, fill=(0,0,0)) 
+		index += 1
+		
+	support.show()
+	file_name = 'report_' + current_datetime.strftime("%d%m%Y_%H%M%S") + '.png'
+	save_path = output_directory + "/" + file_name
+	support.save(save_path)
+	
+	return save_path
+
+
+def send_log_by_mail(nb_flights_found):
+	with open(Logger.log_file_path, "r+", encoding="utf-8") as f:
+		log = f.read()
+
+	message_text = """\
+	""" + str(nb_flights_found) + """ vols
+
+
+	Début: """ + str(datetime.datetime.fromtimestamp(start_time).strftime("%H.%M:%S")) + """
+	Fin: """ + str(datetime.datetime.fromtimestamp(end_time).strftime("%H.%M:%S")) + """
+
+
+	Log:
+
+	""" + log
+
+	msg = MIMEMultipart()
+	msg['Subject'] = "Récapitulatifs vols - " + str(datetime.date.today())
+	msg['From'] = mail_info["email"]
+	msg['To'] = mail_info["email"]
+
+	msg.attach(MIMEText(message_text, "plain", "utf-8"))
+
+	with smtplib.SMTP_SSL(mail_info["smtp_addr"], mail_info["smtp_port"]) as server:
+		server.ehlo()
+		server.login(mail_info["email"], mail_info["password"])
+		server.sendmail(mail_info["email"], mail_info["email"], msg.as_string())
 
 def get_flights_info():
-	pass
+	begin = int(start_time - start_days_ago*24*60*60)
+	end = int(start_time - end_days_ago*24*60*60)
+	nb_flights_found = 0
+	co2_per_aircraft = {}
 
-def prepare_for_report():
-	pass
-
-config()
-check_config()
-
-script_path = os.path.realpath(__file__)
-send_email = True # send recap email
-headless_instagram = True  # hide Instagram browsing
-
-# Browser params
-headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
-options = Options() # first instance of browser -> Instagram
-##options.add_argument("-profile")
-##options.add_argument(r'/path/to/firefox/profile/.mozilla/firefox/regatzrxsd.default') # use a profile to avoid logging in to Instagram each time
-if headless_instagram: options.add_argument("--headless")
-
-# Instagram
-#instagram_post = "{day} | {departure} -> {arrival} | {duration} | ~ {co2} t CO2\n.\n{hashtags}\n.\nLes émissions de CO2 sont des estimations.\nLa trajectoire de vol représentée est illustrative."
-
-# Others
-locale.setlocale(locale.LC_TIME,'') # For French date format
-		
-# Write in log or print in console
-if log_file: 
-	sys.stdout = open(log_file, 'w')
-
-start_time = time.time()
-
-# Open Sky API request
-begin = int(start_time - start_days_ago*24*60*60)
-end = int(start_time - end_days_ago*24*60*60)
-nb_flights_found = 0
-co2_per_aircraft = {}
-
-for aircraft in aircrafts:
-	if aircraft["ton_per_km"] == "":
-		continue
-
-	requestURL = api_url + '?icao24=' + aircraft["icao24"] + '&begin=' + str(begin) + '&end=' + str(end) 
-	# Requesting API
-	for i in range(20):
-		try:
-			print('Requesting OpenSky Network API')
-			r = requests.get(requestURL, headers=headers,timeout=10)
-		except:
-			print('Cannot access OpenSky Network API, sleep for 1min')
-			r = None
-			time.sleep(60)
-		else:
-			break
-
-	if r is None :
-		print('Cannot reach OpenSky API - just re-run the script')
-		flights = []
-	else:
-		flights = r.json()
-
-	nb_flights_found += len(flights)
-
-	if (not aircraft["owner_or_operator"] in co2_per_aircraft):
-		co2_per_aircraft[aircraft["owner_or_operator"]] = 0.0
-
-
-	# Getting flights
-	for flight in flights:
-		if (flight['estDepartureAirport'] is None or flight['estArrivalAirport'] is None or flight['firstSeen'] is None or flight['estDepartureAirport'] == flight['estArrivalAirport']):
+	for aircraft in aircrafts:
+		if aircraft["ton_per_km"] == "":
 			continue
 
-		departure_coord = 0
-		arrival_coord = 0
+		requestURL = api_url + '?icao24=' + aircraft["icao24"] + '&begin=' + str(begin) + '&end=' + str(end) 
+		# Requesting API
+		for i in range(20):
+			try:
+				Logger.info('Requesting OpenSky Network API')
+				r = requests.get(requestURL, headers=headers,timeout=10)
+			except:
+				Logger.warning('Cannot access OpenSky Network API, sleep for 1min')
+				r = None
+				time.sleep(60)
+			else:
+				break
 
-		# Getting airport municipalities and day of travel
-		with open("resources/airports.csv") as f:
-			airports = csv.DictReader(f)
+		if r is None :
+			Logger.error('Cannot reach OpenSky API - just re-run the script')
+			flights = []
+		else:
+			flights = r.json()
+
+		nb_flights_found += len(flights)
+
+		if (not aircraft["owner_or_operator"] in co2_per_aircraft):
+			co2_per_aircraft[aircraft["owner_or_operator"]] = 0.0
+
+
+		# Getting flights
+		for flight in flights:
+			if (flight['estDepartureAirport'] is None or flight['estArrivalAirport'] is None or flight['firstSeen'] is None or flight['estDepartureAirport'] == flight['estArrivalAirport']):
+				continue
+
+			departure_coord = 0
+			arrival_coord = 0
+
+			# Getting airport municipalities and day of travel
 			for airport in airports:
 				if (airport['ident'] == flight['estDepartureAirport'] or airport['gps_code'] == flight['estDepartureAirport']):
 					departure = airport['municipality']
@@ -182,296 +213,149 @@ for aircraft in aircrafts:
 					arrival = airport['municipality']
 					arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
 
-		# print(f"Departure coord is {departure_coord}")
-		# print(f"Arrival coord is {arrival_coord}")
+				departure_time = str(datetime.date.fromtimestamp(flight['firstSeen']).strftime("%d.%m.%Y"))
+				duration = flight['lastSeen'] - flight['firstSeen']
 
-		departure_time = str(datetime.date.fromtimestamp(flight['firstSeen']).strftime("%d.%m.%Y"))
-		duration = flight['lastSeen'] - flight['firstSeen']
+			try:
+				distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
+			except ValueError:
+				#print("AICRAFT IS " + aircraft["icao24"] + " - " + aircraft["owner_or_operator"])
+				Logger.error(f'AIRCRAFT: {aircraft["icao24"]}-{aircraft["owner_or_operator"]} DEPARTURE: {flight["estDepartureAirport"]} - {departure_coord}, ARRIVAL: {flight["estArrivalAirport"]} - {arrival_coord}')
+			else:
+				co2 = round(distance * float(aircraft["ton_per_km"]), 1)
+				co2_per_aircraft[aircraft["owner_or_operator"]] += co2
 
-		try:
-			distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
-		except ValueError:
-			print("AICRAFT IS " + aircraft["icao24"] + " - " + aircraft["owner_or_operator"])
-			print_error(f'DEPARTURE: {flight["estDepartureAirport"]} - {departure_coord}, ARRIVAL: {flight["estArrivalAirport"]} - {arrival_coord}')
-		else:
-			co2 = round(distance * float(aircraft["ton_per_km"]), 1)
-			co2_per_aircraft[aircraft["owner_or_operator"]] += co2
+	return co2_per_aircraft, nb_flights_found
 
-print(co2_per_aircraft)
-co2_per_aircraft = dict(sorted(co2_per_aircraft.items(), key=lambda it: it[1], reverse=True))
-generate_report.generate(co2_per_aircraft)
 
-# if nb_flights_new != 0:
-# 	if instagram:
-# 		# Go to Instagram
-# 		print("Go to Instagram")
-# 		driver = webdriver.Firefox(service=Service(gecko_driver_path), options=options)
-# 		driver.get('https://instagram.com')
-# 		time.sleep(5)
+def post_on_instagram(nb_flights_found, report_path):
+	if nb_flights_found != 0:
+		again = 0
+		# Go to Instagram
+		Logger.info("Go to Instagram")
+		driver = webdriver.Firefox(service=Service(gecko_driver_path), options=options)
+		driver.get('https://instagram.com')
+		time.sleep(5)
 		
-# 		# Log in only if sessionId did not work (looking for publish button)
-# 		try:
-# 			driver.find_element(By.XPATH, '//*[@class="_abl- _abm2"]')
-# 		except:
-# 			again = 0
-# 			while (again < 10):
-# 				print("Not logged, get instagram")
-# 				if (re.search("Allow the use of cookies", driver.page_source) or re.search("utilisation des cookies", driver.page_source)):
-# 					allowCookiesButton = driver.find_element(By.XPATH, '//*[@class="aOOlW  bIiDR  "]').click()
-# 					time.sleep(5)
-# 					print("Closed cookie pop-up")
-# 				usernameInput = driver.find_element(By.XPATH, '//*[@name="username"]').send_keys(instagram_info["username"])
-# 				passwordInput = driver.find_element(By.XPATH, '//*[@name="password"]').send_keys(instagram_info["password"])
-# 				loginButton = driver.find_element(By.XPATH, '//*[@type="submit"]').click()
-# 				print("Sent login details")
-# 				time.sleep(5)
-# 				if (re.search("Forgot password", driver.page_source)):
-# 					print('Cannot log in, sleep for 2min')
-# 					time.sleep(120)
-# 					driver.get('https://google.com') #reload by changing page
-# 					driver.get('https://instagram.com')
-# 					again += 1
-# 				else:
-# 					again = 99
-# 					print("Logged in Instagram")
-# 		else:	
-# 			again = 99
-# 			print("Logged in Instagram")
-# 			if (re.search("Not Now", driver.page_source) or re.search("Plus tard", driver.page_source)):
-# 				notNowCookieButton = driver.find_element(By.XPATH, '//*[@class="aOOlW   HoLwm "]').click()
-# 	else:
-# 		again = 99
+		# Log in only if sessionId did not work (looking for publish button)
+		try:
+			driver.find_element(By.XPATH, '//*[@class="_abl- _abm2"]')
+		except:
+			again = 0
+			while (again < 10):
+				Logger.warning("Not logged, get instagram")
+				if (re.search("Allow the use of cookies", driver.page_source) or re.search("utilisation des cookies", driver.page_source)):
+					allowCookiesButton = driver.find_element(By.XPATH, '//*[@class="aOOlW  bIiDR  "]').click()
+					time.sleep(5)
+					Logger.info("Closed cookie pop-up")
+				usernameInput = driver.find_element(By.XPATH, '//*[@name="username"]').send_keys(instagram_info["username"])
+				passwordInput = driver.find_element(By.XPATH, '//*[@name="password"]').send_keys(instagram_info["password"])
+				loginButton = driver.find_element(By.XPATH, '//*[@type="submit"]').click()
+				Logger.info("Sent login details to Instagram")
+				time.sleep(5)
+				if (re.search("Forgot password", driver.page_source)):
+					Logger.error('Cannot log into Instagram, sleep for 2min')
+					time.sleep(120)
+					driver.get('https://google.com') #reload by changing page
+					driver.get('https://instagram.com')
+					again += 1
+				else:
+					again = 99
+					Logger.info("Logged in Instagram")
+		else:	
+			again = 99
+			Logger.info("Logged in Instagram")
+			if (re.search("Not Now", driver.page_source) or re.search("Plus tard", driver.page_source)):
+				notNowCookieButton = driver.find_element(By.XPATH, '//*[@class="aOOlW   HoLwm "]').click()
 
-# 	if (again == 10):
-# 		print("Could not log into Instagram - just re-run script later")
-# 	else:
-# 		i = 0
-# 		for flight in flightList:
-# 			# gather flight infos
-# 			departure = flight[0]
-# 			arrival = flight[1]
-# 			day = flight[2]
-# 			departure_coord = flight[3]
-# 			arrival_coord = flight[4]
-# 			co2 = str(flight[5])
-# 			duration = time.strftime("%-Hh%Mmin", time.gmtime(flight[6]))
-# 			print("[Flight " + str(i) + " - " + departure + " -> " + arrival + "]")
+		if (again == 10):
+			Logger.error("Could not log into Instagram - just re-run script later")
+		else:
+				# Add flight to Instagram
+				again = 0
+				while (again < 10):
+					hashtagSample = ""
+					for hashtag in hashtags:
+						hashtagSample += "#" + hashtag + " "
 
-# 			# convert GPS coordinates to numbers
-# 			departure_coord[0] = float(departure_coord[0])
-# 			departure_coord[1] = float(departure_coord[1])
-# 			arrival_coord[0] = float(arrival_coord[0])
-# 			arrival_coord[1] = float(arrival_coord[1])
-			
-# 			# Turn the globe to keep distance < 180°
-# 			if abs(arrival_coord[1]-departure_coord[1])>180:
-# 				if (arrival_coord[1] < departure_coord[1]):
-# 					departure_coord[1] -= 360
-# 				else:
-# 					arrival_coord[1] -= 360
-				
-# 			# Create the map
-# 			map = folium.Map(zoom_control=False)
-# 			map.fit_bounds([departure_coord, arrival_coord], padding=[120,120]);
+					# Publish image
+					try:
+						Logger.info("Adding report to Instagram")
+						time.sleep(2)
+						try:
+							driver.find_element(By.XPATH, "//div[contains(@class, '_a9-z')]//button[contains(@class, '_a9-- _a9_1')]").click()
+							Logger.info("Refused desktop notifications")
+						except:
+							Logger.warning("Notifications request not found. Retry.")
 
-# 			# Add plane and city names
-# 			if (departure_coord[1] < arrival_coord[1]): # position the plane towards arrival
-# 				planeSide = "toright"
-# 			else: 
-# 				planeSide = "toleft"
-
-# 			if (departure_coord[0] < arrival_coord[0]): # write arrival city name above or below coordinate (not to cross plane path)
-# 				cityMarginTop = "-50"
-# 			else:
-# 				cityMarginTop = "10"
-			
-# 			# Add cities and plane
-# 			folium.Marker(
-# 					departure_coord,
-# 					icon=folium.DivIcon(html=f"""<div style='transform: scale(0.45) translate(-90px, -210px)'><img src="icons/plane""" + planeSide + """.png"></div>""")
-# 				 ).add_to(map)
-# 			folium.CircleMarker(
-# 					arrival_coord,
-# 					color="black",
-# 					fill_color='black', 
-# 					radius=3
-# 					).add_to(map)
-			
-# 			folium.Marker(
-# 					departure_coord,
-# 					icon=folium.DivIcon(html=f"""<div style='font-family: Arial; margin-top: 40px; font-size: 3.1em; font-weight: 600; color:black; width: max-content; transform: translate(-50%)'>""" + flight[0] + """</div>""")
-# 				 ).add_to(map)
-# 			folium.Marker(
-# 					arrival_coord,
-# 					icon=folium.DivIcon(html=f"""<div style='font-family: Arial; margin-top: """ + cityMarginTop + """px; font-size: 3.1em; font-weight: 600; color: black; width: max-content; transform: translate(-50%);'>""" + flight[1] + """</div>""")
-# 				 ).add_to(map)
-
-# 			# Add curve between airports
-# 			curve = []
-# 			slope = abs(arrival_coord[1]-departure_coord[1])/500
-# 			for t in range(101):
-# 				curve.append([
-# 					departure_coord[0] + slope*t + (arrival_coord[0]-departure_coord[0]-slope*100)/10000*t*t,
-# 					departure_coord[1] + t*(arrival_coord[1]-departure_coord[1])/100
-# 					])
-
-# 			folium.PolyLine(
-# 				curve,
-# 				weight=3,
-# 				color='black'
-# 				).add_to(map)
-
-# 			# Export the map to HTML
-# 			print("Creating map")
-# 			outputFile = "map.html"
-# 			map.save(outputFile)
-# 			mapURL = 'file://{0}/{1}'.format(os.getcwd(), outputFile)
-
-# 			# Add 'absolute position' content to HTML
-# 			# Folium does not allow for it, so use a direct solution
-# 			with open(outputFile, 'a') as mapHTML:
-# 				mapHTML.write(
-# 				"""
-# 				<div style='position: absolute; z-index: 9999; font-family: Arial; font-size: 2.4em; padding-top:5px; font-weight: 600; color: black; left: 20px; top: 20px;'>""" 
-# 				+ aircraftName +
-# 				"""</div>
-# 				<div style='position: absolute; z-index: 9999; font-family: Arial; font-size: 2.7em; font-weight: 600; color: black; right: 20px; top: 20px;'>"""
-# 				+ day +
-# 				"""
-# 				</div>
-# 				<div style='position: absolute; z-index: 9999; font-family: Arial; font-size: 2.7em; font-weight: 600; color: black; left: 20px; bottom: 20px;'>"""
-# 				+ duration +
-# 				"""</div>
-# 				<div style='position: absolute; z-index: 9999; font-family: Arial; font-size: 2.7em; font-weight: 600; color: black; right: 20px; bottom: 20px;'>~ """
-# 				+ co2 +
-# 				""" t CO2</div>""")
-			
-# 			# Open it with webdriver
-# 			driver2 = webdriver.Firefox(service=Service(gecko_driver_path), options=options2)
-# 			driver2.set_window_size(1080, 1165)
-
-# 			# Save screenshot (png)
-# 			driver2.get(mapURL)
-# 			time.sleep(6)
-# 			output = 'output/output'+str(i)+'.png'
-# 			print("Taking screenshot")
-# 			driver2.save_screenshot(output)
-# 			driver2.quit()
-			
-# 			# Convert to jpg
-# 			im = Image.open(output)
-# 			output = 'output/output'+str(i)+'.jpg'
-# 			rgb_im = im.convert('RGB')
-# 			rgb_im.save(output)
-
-# 			time.sleep(5)
-			
-# 			# Add flight to Instagram
-# 			if instagram:
-# 				again = 0
-# 				while (again < 10):
-# 					#Randomly choose hashtags
-# 					sample = random.sample(range(0, len(hashtags)), nbHashtags)
-# 					hashtagSample = ""
-# 					for i in sample:
-# 						hashtagSample += "#" + hashtags[i] + " "
-
-# 					# Publish image
-# 					try:
-# 						print("Adding map to Instagram")
-# 						newPostButton = driver.find_element(By.XPATH, '//*[@aria-label="Nouvelle publication"]').click()
+						newPostButton = driver.find_element(By.XPATH, '//*[@aria-label="Nouvelle publication"]').click()
+						Logger.info("New post window opened")
+						time.sleep(5)
+						dropZone = driver.find_element(By.XPATH, "//div[contains(@class,'_ac2r')]//input[contains(@type,'file')]").send_keys(script_path + "/" + report_path)
+						Logger.info	("Report image dropped in drop zone.")
+						time.sleep(8)
+						submitButton = driver.find_element(By.XPATH, "//div[contains(@class,'_ab8w  _ab94 _ab99 _ab9f _ab9m _ab9p  _ab9- _abaa')]//button[contains(@type,'button')]").click()
+						Logger.info("Uploaded report to Instagram, waiting for publishing.")
+						time.sleep(8)
+						noFilterButton = driver.find_element(By.XPATH, "//div[contains(@class,'_ab8w  _ab94 _ab99 _ab9f _ab9m _ab9p  _ab9- _abaa')]//button[contains(@type,'button')]").click()
+						Logger.info("Next no filter clicked.")
+						time.sleep(5)
 						
-# 						print("New post window opened")
-# 						time.sleep(5)
-# 						dropZone = driver.find_element(By.XPATH, "//div[contains(@class,'_ac2r')]//input[contains(@type,'file')]").send_keys(script_path + output)
-# 						print("Map dropped in drop zone")
-# 						time.sleep(8)
-# 						submitButton = driver.find_element(By.XPATH, "//div[contains(@class,'_ab8w  _ab94 _ab99 _ab9f _ab9m _ab9p  _ab9- _abaa')]//button[contains(@type,'button')]").click()
-# 						print("Map submitted")
-# 						time.sleep(8)
-# 						noFilterButton = driver.find_element(By.XPATH, "//div[contains(@class,'_ab8w  _ab94 _ab99 _ab9f _ab9m _ab9p  _ab9- _abaa')]//button[contains(@type,'button')]").click()
-# 						print("Next no filter clicked")
-# 						time.sleep(5)
-							
-# 						captionArea = driver.find_element(By.XPATH, '//*[@class="_ablz _aaeg"]')
-# 						captionArea.send_keys(instagram_post.format(day=day,departure=departure,arrival=arrival,duration=duration,co2=co2, hashtags=hashtagSample))
-						
-# 						# Test mode prevent from posting
-# 						if (test):
-# 							post = input("Post flight? (y/n)")
-# 							if (post != "y"):
-# 								quit()
-						
-# 						print("Caption sent")						
-# 						publishButton = driver.find_element(By.XPATH, "//div[contains(@class,'_ab8w  _ab94 _ab99 _ab9f _ab9m _ab9p  _ab9- _abaa')]//button[contains(@type,'button')]").click()
-# 						print("Post published")
-# 						time.sleep(8)
-# 						confirmPopUpCloseButton = driver.find_element(By.XPATH, '//*[@class="fg7vo5n6 lrzqjn8y"]').click()
-# 						time.sleep(5)
-
-# 						# Record flight into .csv file
-# 						with open("flights.csv", "a") as f:
-# 							oldFlightsWriter = csv.writer(f)
-# 							oldFlightsWriter.writerow(flight)
-# 					except:
-# 						print("Could not add flight. Trying again.")
-# 						driver.get('https://instagram.com')
-# 						time.sleep(5)
-# 						again += 1
-# 					else:
-# 						again = 99
-# 						nb_flights_uploaded += 1
+						caption_area = driver.find_element(By.XPATH, '//*[@class="_ablz _aaeg"]')
+						caption = (f'Classement {current_datetime.strftime("%B").capitalize()} {current_datetime.year}\n'
+						'Pour plus de détails : https://github.com/celuiquialaplusgrosse/celuiquialaplusgrosse/blob/main/logs.txt\n'
+						'.\n'
+						'.\n'
+						'.\n'
+						'.\n'
+						'.\n'
+						f'{hashtagSample}')
 					
-# 				if (again == 10):
-# 					print('Could not add flight to Instagram. Ignore the flight : ' + day + ' | ' + departure + ' -> ' + arrival)
+						caption_area.send_keys(caption)
+						Logger.info(f"Instagram post caption is: {caption}")
+						
+						Logger.info("Caption sent")						
+						publishButton = driver.find_element(By.XPATH, "//div[contains(@class,'_ab8w  _ab94 _ab99 _ab9f _ab9m _ab9p  _ab9- _abaa')]//button[contains(@type,'button')]").click()
+						Logger.info("Post published")
+						time.sleep(8)
+					except Exception as e:
+						Logger.warning(str(e))
+						Logger.error("Could not add flight. Trying again.")
+						driver.get("https://instagram.com")
+						time.sleep(5)
+						again += 1
+					else:
+						again = 99
+					
+				if (again == 10):
+					Logger.error("Could not add report to Instagram.")
 			
-# 			i+=1
-
-# if 'driver' in locals():
-# 	driver.quit()
-
-end_time = time.time()
-
-# # print general results
-# print("API : " + str(nbFlightsFoundAPI))
-# print("New : " + str(nb_flights_new))
-# print("Uploaded : " + str(nb_flights_uploaded))
-
-#print(f"Found {nb_flights_found}")
-#print(co2_per_aircraft)
-
-# stop logging and send logs via email
-# print(log_file)
-sys.stdout.close()
-with open(log_file, "r+") as f:
-	log = f.read()
-
-#""" + str(nb_flights_uploaded) + """/""" + str(nb_flights_new) + """ nouveaux vols
-
-message_text = """\
-""" + str(0) + """/""" + str(0) + """ nouveaux vols
+	if 'driver' in locals():
+		driver.quit()
 
 
-Debut: """ + str(datetime.datetime.fromtimestamp(start_time).strftime("%H.%M:%S")) + """
-Fin: """ + str(datetime.datetime.fromtimestamp(end_time).strftime("%H.%M:%S")) + """
+def main():
+	global start_time, end_time
+	start_time = time.time()
+	config()
+	check_config()
 
+	if (test_mode):
+		end_time = time.time()
+		flights_info = {}
+		with open("test_sample.json", "r", encoding="utf-8") as test_file:
+			flights_info = json.load(test_file)
 
-Log:
+		co2_per_aircraft = dict(sorted(flights_info.items(), key=lambda it: it[1], reverse=True))
+		report_path = generate(co2_per_aircraft)
+		post_on_instagram(len(flights_info), report_path)
+		send_log_by_mail(len(flights_info))
+	else:
+		flights_info = get_flights_info()
+		Logger.info(flights_info[0])
+		co2_per_aircraft = dict(sorted(flights_info[0].items(), key=lambda it: it[1], reverse=True))
+		end_time = time.time()
+		send_log_by_mail(flights_info[1])
+		post_on_instagram(flights_info[1], report_path)
 
-""" + log
-
-msg = MIMEMultipart()
-msg['Subject'] = "Récapitulatifs vols - " + str(datetime.date.today())
-msg['From'] = mail_info["email"]
-msg['To'] = mail_info["email"]
-
-msg.attach(MIMEText(message_text, "plain"))
-
-if send_email:
-	# Create a secure SSL context
-	# Send email
-	with smtplib.SMTP_SSL(mail_info["smtp_addr"], mail_info["smtp_port"]) as server:
-		server.ehlo()
-		server.login(mail_info["email"], mail_info["password"])
-		server.sendmail(mail_info["email"], mail_info["email"], msg.as_string())
-
+main()
