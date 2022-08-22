@@ -1,0 +1,45 @@
+[INFO] @ 22/08/2022 15:30:23 - Configuration loaded.
+[WARNING] @ 22/08/2022 15:30:23 - No evaluation for aircraft F-RARF owned/operated by Armée française
+[WARNING] @ 22/08/2022 15:30:23 - No value for 'firefox_profile_path'.
+[INFO] @ 22/08/2022 15:30:23 - Configuration OK.
+[INFO] @ 22/08/2022 15:30:23 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:24 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:25 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:25 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:26 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:27 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:29 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:29 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:30 - Requesting OpenSky Network API
+[INFO] @ 22/08/2022 15:30:30 - {'Total': 9.4, 'Armée française': 60.3, 'LVMH': 0.0}
+[INFO] @ 22/08/2022 15:30:31 - Go to Instagram
+[WARNING] @ 22/08/2022 15:30:43 - Not logged, get instagram
+[INFO] @ 22/08/2022 15:30:48 - Closed cookie pop-up
+[INFO] @ 22/08/2022 15:30:48 - Sent login details to Instagram
+[INFO] @ 22/08/2022 15:30:53 - Logged in Instagram
+[INFO] @ 22/08/2022 15:30:53 - Adding report to Instagram
+[WARNING] @ 22/08/2022 15:30:55 - Notifications request not found. Retry.
+[INFO] @ 22/08/2022 15:30:56 - New post window opened
+[WARNING] @ 22/08/2022 15:31:01 - Message: Unable to locate element: //div[contains(@class,'_ac2r')]//input[contains(@type,'file')]
+Stacktrace:
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.jsm:188:5
+NoSuchElementError@chrome://remote/content/shared/webdriver/Errors.jsm:400:5
+element.find/</<@chrome://remote/content/marionette/element.js:292:16
+
+[ERROR] @ 22/08/2022 15:31:01 - Could not add flight. Trying again.
+[INFO] @ 22/08/2022 15:31:10 - Adding report to Instagram
+[INFO] @ 22/08/2022 15:31:13 - Refused desktop notifications
+[INFO] @ 22/08/2022 15:31:13 - New post window opened
+[INFO] @ 22/08/2022 15:31:18 - Report image dropped in drop zone.
+[INFO] @ 22/08/2022 15:31:26 - Uploaded report to Instagram, waiting for publishing.
+[INFO] @ 22/08/2022 15:31:35 - No filter selected
+[INFO] @ 22/08/2022 15:31:42 - Instagram post caption is: Classement Août 2022
+Pour plus de détails : https://github.com/celuiquialaplusgrosse/celuiquialaplusgrosse/blob/main/logs.txt
+.
+.
+.
+.
+.
+#co2 #environnement #ecologie #jetprives #surconsommation #information #avions 
+[INFO] @ 22/08/2022 15:31:42 - Caption sent
+[INFO] @ 22/08/2022 15:31:42 - Post published
