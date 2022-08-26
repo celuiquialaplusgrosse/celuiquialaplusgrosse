@@ -84,7 +84,7 @@ def check_config():
 	Check configuration
 	"""
 	for aircraft in aircrafts:
-		if aircraft["ton_per_km"] == "":
+		if aircraft["ton_per_km"] == "" and aircraft["ton_per_hour"] == "":
 			Logger.warning(f"""No evaluation for aircraft {aircraft["registry"]} owned/operated by {aircraft["owner_or_operator"]}""")
 
 	if len(hashtags) == 0:
@@ -195,7 +195,7 @@ def get_flights_info():
 	co2_per_aircraft = {}
 
 	for aircraft in aircrafts:
-		if aircraft["ton_per_km"] == "":
+		if aircraft["ton_per_km"] == "" and aircraft["ton_per_hour"]:
 			continue
 
 		requestURL = api_url + '?icao24=' + aircraft["icao24"] + '&begin=' + str(begin) + '&end=' + str(end) 
@@ -229,25 +229,33 @@ def get_flights_info():
 			if (flight['estDepartureAirport'] is None or flight['estArrivalAirport'] is None or flight['estDepartureAirport'] == flight['estArrivalAirport']):
 				continue
 
-			# Init coordinates
-			departure_coord = 0
-			arrival_coord = 0
+			if aircraft["ton_per_km"] != "":
+				# Init coordinates
+				departure_coord = 0
+				arrival_coord = 0
 
-			# Getting airport municipalities and day of travel
-			for airport in airports:
-				if (airport['ident'] == flight['estDepartureAirport'] or airport['gps_code'] == flight['estDepartureAirport']):
-					departure = airport['municipality']
-					departure_coord = [airport['latitude_deg'],airport['longitude_deg']]
-				if (airport['ident'] == flight['estArrivalAirport'] or airport['gps_code'] == flight['estArrivalAirport']):
-					arrival = airport['municipality']
-					arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
+				# Getting airport municipalities and day of travel
+				for airport in airports:
+					if (airport['ident'] == flight['estDepartureAirport'] or airport['gps_code'] == flight['estDepartureAirport']):
+						departure = airport['municipality']
+						departure_coord = [airport['latitude_deg'],airport['longitude_deg']]
+					if (airport['ident'] == flight['estArrivalAirport'] or airport['gps_code'] == flight['estArrivalAirport']):
+						arrival = airport['municipality']
+						arrival_coord = [airport['latitude_deg'],airport['longitude_deg']]
 
-			try:
-				distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
-			except ValueError:
-				Logger.error(f'AIRCRAFT: {aircraft["icao24"]}-{aircraft["owner_or_operator"]} DEPARTURE: {flight["estDepartureAirport"]} - {departure_coord}, ARRIVAL: {flight["estArrivalAirport"]} - {arrival_coord}')
+				
+				print(flight_duration/3600)
+
+				try:
+					distance = geopy.distance.geodesic(departure_coord, arrival_coord).km
+				except ValueError:
+					Logger.error(f'AIRCRAFT: {aircraft["icao24"]}-{aircraft["owner_or_operator"]} DEPARTURE: {flight["estDepartureAirport"]} - {departure_coord}, ARRIVAL: {flight["estArrivalAirport"]} - {arrival_coord}')
+				else:
+					co2 = round(distance * float(aircraft["ton_per_km"]), 1)
+					co2_per_aircraft[aircraft["owner_or_operator"]] += co2
 			else:
-				co2 = round(distance * float(aircraft["ton_per_km"]), 1)
+				flight_duration = (flight['lastSeen'] - flight['firstSeen'])/3600
+				co2 = round(flight_duration * aircraft["ton_per_hour"])
 				co2_per_aircraft[aircraft["owner_or_operator"]] += co2
 
 	return co2_per_aircraft, nb_flights_found

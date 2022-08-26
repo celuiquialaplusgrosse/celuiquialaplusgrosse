@@ -1,0 +1,27 @@
+[INFO] @ 26/08/2022 17:00:56 - Configuration loaded.
+[WARNING] @ 26/08/2022 17:00:56 - No evaluation for aircraft F-RARF owned/operated by Armée française
+[WARNING] @ 26/08/2022 17:00:56 - No value for 'firefox_profile_path'.
+[INFO] @ 26/08/2022 17:00:56 - Configuration OK.
+[INFO] @ 26/08/2022 17:00:56 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:00:58 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:00:58 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:00:59 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:01:01 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:01:02 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:01:04 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:01:05 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:01:06 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 17:01:08 - {'Total': 9.4, 'Armée française': 76.80000000000001, 'LVMH': 0.0}
+[INFO] @ 26/08/2022 17:01:08 - Go to Instagram
+[WARNING] @ 26/08/2022 17:01:18 - Not logged, get instagram
+[INFO] @ 26/08/2022 17:01:23 - Closed cookie pop-up
+[INFO] @ 26/08/2022 17:01:24 - Sent login details to Instagram
+[INFO] @ 26/08/2022 17:01:29 - Logged in Instagram
+[INFO] @ 26/08/2022 17:01:29 - Adding report to Instagram
+[WARNING] @ 26/08/2022 17:01:31 - Notifications request not found. Retry.
+[INFO] @ 26/08/2022 17:01:31 - New post window opened
+[ERROR] @ 26/08/2022 17:01:36 - Could not add flight. Trying again.
+[INFO] @ 26/08/2022 17:01:43 - Adding report to Instagram
+[INFO] @ 26/08/2022 17:01:45 - Refused desktop notifications
+[INFO] @ 26/08/2022 17:01:46 - New post window opened
+[INFO] @ 26/08/2022 17:01:51 - Report image dropped in drop zone.

@@ -1,0 +1,40 @@
+[INFO] @ 26/08/2022 16:57:24 - Configuration loaded.
+[WARNING] @ 26/08/2022 16:57:24 - No evaluation for aircraft F-RARF owned/operated by Armée française
+[WARNING] @ 26/08/2022 16:57:24 - No value for 'firefox_profile_path'.
+[INFO] @ 26/08/2022 16:57:24 - Configuration OK.
+[INFO] @ 26/08/2022 16:57:24 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:57:25 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:57:26 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:57:27 - Requesting OpenSky Network API
+[WARNING] @ 26/08/2022 16:57:27 - Cannot access OpenSky Network API, sleep for 1min
+[INFO] @ 26/08/2022 16:58:27 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:58:28 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:58:29 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:58:30 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:58:32 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:58:33 - Requesting OpenSky Network API
+[INFO] @ 26/08/2022 16:58:34 - {'Total': 9.4, 'Armée française': 76.80000000000001, 'LVMH': 0.0}
+[INFO] @ 26/08/2022 16:58:35 - Go to Instagram
+[WARNING] @ 26/08/2022 16:58:44 - Not logged, get instagram
+[INFO] @ 26/08/2022 16:58:49 - Closed cookie pop-up
+[INFO] @ 26/08/2022 16:58:50 - Sent login details to Instagram
+[INFO] @ 26/08/2022 16:58:55 - Logged in Instagram
+[INFO] @ 26/08/2022 16:58:55 - Adding report to Instagram
+[WARNING] @ 26/08/2022 16:58:57 - Notifications request not found. Retry.
+[ERROR] @ 26/08/2022 16:58:57 - Could not add flight. Trying again.
+[INFO] @ 26/08/2022 16:59:05 - Adding report to Instagram
+[INFO] @ 26/08/2022 16:59:08 - Refused desktop notifications
+[INFO] @ 26/08/2022 16:59:08 - New post window opened
+[INFO] @ 26/08/2022 16:59:13 - Report image dropped in drop zone.
+[INFO] @ 26/08/2022 16:59:21 - Uploaded report to Instagram, waiting for publishing.
+[INFO] @ 26/08/2022 16:59:29 - No filter selected
+[INFO] @ 26/08/2022 16:59:37 - Instagram post caption is: Classement Août 2022
+Rappel : les émissions indiquées ne sont que des estimations. En effet il est difficile de calculer avec précision les émissions moyennes de chaque avion évalué.
+.
+.
+.
+.
+.
+#co2 #environnement #ecologie #jetprives #surconsommation #information #avions 
+[INFO] @ 26/08/2022 16:59:37 - Caption sent
+[INFO] @ 26/08/2022 16:59:37 - Post published
